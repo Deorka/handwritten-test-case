@@ -3,6 +3,9 @@ import os
 import psutil
 import logging
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 class TestCaseBase:
     def __init__(self, tc_id, name):
@@ -19,21 +22,23 @@ class TestCaseBase:
         pass
 
     def execute(self):
-        if self.prep() == 'completed':
-            self.run()
-            self.clean_up()
+        try:
+            self.prep()
+            logger.info(f'Test №{self.tc_id} {self.name} fun "prep" is passed')
+        except AssertionError:
+            logger.warning(f'Test №{self.tc_id} {self.name} fun "prep" is aborded. Fun "run" is skipped')
         else:
-            if self.prep() == 'aborted':
-                pass  # run and cleap_up is skipped
+            self.run()
+            logger.info(f'Test №{self.tc_id} {self.name} fun "run" is passed')
+        finally:
+            self.clean_up()
+            logger.info(f'Test №{self.tc_id} {self.name} fun "clean_up" is passed')
 
 
 class TestCaseListFiles(TestCaseBase):
     def prep(self):
         seconds_from_epoch = int(datetime.datetime.timestamp(datetime.datetime.now()))
-        if seconds_from_epoch % 2:
-            return 'aborted'
-        else:
-            return 'completed'
+        assert seconds_from_epoch % 2
 
     def run(self):
         print(os.listdir(path="/"))
@@ -42,10 +47,7 @@ class TestCaseListFiles(TestCaseBase):
 class TestCaseRandomFile(TestCaseBase):
     def prep(self):
         virtual_memory = psutil.virtual_memory().total
-        if virtual_memory < 1024*1024*1024:
-            return 'aborted'
-        else:
-            return 'completed'
+        assert virtual_memory >= 1024*1024*1024
 
     def run(self):
         with open('test', 'wb') as out:
@@ -56,4 +58,5 @@ class TestCaseRandomFile(TestCaseBase):
 
 
 if __name__ == '__main__':
-    print(TestCaseRandomFile(1, 'prep').run())
+    TestCaseListFiles(1, 'TestCaseRandomFile').execute()
+    TestCaseRandomFile(2, 'TestCaseRandomFile').execute()
