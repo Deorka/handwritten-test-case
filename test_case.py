@@ -1,5 +1,6 @@
 import datetime
 import os
+import psutil
 import logging
 
 
@@ -21,8 +22,9 @@ class TestCaseBase:
         if self.prep() == 'completed':
             self.run()
             self.clean_up()
-        if self.prep() == 'aborted':
-            pass
+        else:
+            if self.prep() == 'aborted':
+                pass  # run and cleap_up is skipped
 
 
 class TestCaseListFiles(TestCaseBase):
@@ -39,12 +41,19 @@ class TestCaseListFiles(TestCaseBase):
 
 class TestCaseRandomFile(TestCaseBase):
     def prep(self):
-        pass
+        virtual_memory = psutil.virtual_memory().total
+        if virtual_memory < 1024*1024*1024:
+            return 'aborted'
+        else:
+            return 'completed'
 
     def run(self):
-        with open("test", "wb") as out:
-            out.truncate(1024)
+        with open('test', 'wb') as out:
+            out.write(os.urandom(1024))
+
+    def clean_up(self):
+        os.remove('test')
 
 
 if __name__ == '__main__':
-    TestCaseRandomFile(1, 'prep').run()
+    print(TestCaseRandomFile(1, 'prep').run())
