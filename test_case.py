@@ -27,6 +27,8 @@ class TestCaseBase:
             logger.info(f'Test №{self.tc_id} {self.name} fun "prep" is passed')
         except AssertionError:
             logger.warning(f'Test №{self.tc_id} {self.name} fun "prep" is aborded. Fun "run" is skipped')
+        except Exception:
+            logger.error(f'Test №{self.tc_id} {self.name} unexpected error')
         else:
             self.run()
             logger.info(f'Test №{self.tc_id} {self.name} fun "run" is passed')
